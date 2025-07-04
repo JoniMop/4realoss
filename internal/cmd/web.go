@@ -198,8 +198,11 @@ func runWeb(c *cli.Context) error {
 			m.Group("/login", func() {
 				m.Combo("").Get(user.Login).
 					Post(bindIgnErr(form.SignIn{}), user.LoginPost)
-				m.Combo("/two_factor").Get(user.LoginTwoFactor).Post(user.LoginTwoFactorPost)
-				m.Combo("/two_factor_recovery_code").Get(user.LoginTwoFactorRecoveryCode).Post(user.LoginTwoFactorRecoveryCodePost)
+				m.Combo("/two_factor").Get(user.LoginTwoFactor).
+					Post(user.LoginTwoFactorPost)
+				m.Combo("/two_factor_recovery_code").Get(user.LoginTwoFactorRecoveryCode).
+					Post(user.LoginTwoFactorRecoveryCodePost)
+				m.Post("/metamask", user.LoginMetamask)
 			})
 
 			m.Get("/sign_up", user.SignUp)

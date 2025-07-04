@@ -58,9 +58,78 @@
 							<a href="{{AppSubURL}}/user/sign_up">{{.i18n.Tr "auth.sign_up_now" | Str2HTML}}</a>
 						</div>
 					{{end}}
+
+					<!-- Metamask Login Button -->
+					<div class="ui divider"></div>
+					<div class="inline field">
+						<label></label>
+						<button type="button" class="ui orange button" id="metamask-login">
+							<img src="{{AppSubURL}}/img/metamask.svg" alt="Metamask" style="height: 1.2em; margin-right: 0.5em; vertical-align: middle;">
+							Login with Metamask
+						</button>
+					</div>
 				</div>
 			</form>
 		</div>
 	</div>
 </div>
+
+<!-- Metamask Integration Script -->
+<script>
+document.getElementById('metamask-login').addEventListener('click', async () => {
+	if (typeof window.ethereum === 'undefined') {
+		alert('Please install Metamask to use this feature');
+		return;
+	}
+
+	try {
+		// Request account access
+		console.log('Requesting Metamask accounts...');
+		const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+		const address = accounts[0].toLowerCase(); // Ensure lowercase address
+		console.log('Connected address:', address);
+
+		// Get the message to sign
+		const message = "Sign this message to login to Gogs";
+		console.log('Message to sign:', message);
+		
+		// Get the signature
+		console.log('Requesting signature...');
+		const signature = await window.ethereum.request({
+			method: 'personal_sign',
+			params: [message, address]
+		});
+		console.log('Received signature:', signature);
+
+		// Prepare the request body
+		const requestBody = {
+			address: address,
+			signature: signature.startsWith('0x') ? signature.slice(2) : signature // Remove '0x' prefix if present
+		};
+		console.log('Sending to backend:', requestBody);
+
+		// Send to backend for verification
+		const response = await fetch('{{AppSubURL}}/user/login/metamask', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'X-CSRF-Token': document.querySelector('input[name="_csrf"]').value
+			},
+			body: JSON.stringify(requestBody)
+		});
+
+		if (response.ok) {
+			window.location.href = '{{AppSubURL}}/';
+		} else {
+			const data = await response.json();
+			console.error('Metamask login error response:', data);
+			alert(data.error || 'Failed to login with Metamask');
+		}
+	} catch (err) {
+		console.error('Metamask login error:', err);
+		alert('Failed to login with Metamask: ' + err.message);
+	}
+});
+</script>
+
 {{template "base/footer" .}}

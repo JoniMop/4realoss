@@ -7,6 +7,7 @@ package user
 import (
 	gocontext "context"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -16,6 +17,7 @@ import (
 	log "unknwon.dev/clog/v2"
 
 	"gogs.io/gogs/internal/auth"
+	"gogs.io/gogs/internal/auth/metamask"
 	"gogs.io/gogs/internal/conf"
 	"gogs.io/gogs/internal/context"
 	"gogs.io/gogs/internal/database"
@@ -634,4 +636,33 @@ func ResetPasswdPost(c *context.Context) {
 
 	c.Data["IsResetFailed"] = true
 	c.Success(tmplUserAuthResetPassword)
+}
+
+type MetamaskLoginRequest struct {
+	Address   string `json:"address"`
+	Signature string `json:"signature"`
+}
+
+// LoginMetamask handles Metamask login requests
+func LoginMetamask(c *context.Context) {
+	var req MetamaskLoginRequest
+	if err := json.NewDecoder(c.Req.Request.Body).Decode(&req); err != nil {
+		c.Error(err, "decode request body")
+		return
+	}
+
+	provider := metamask.NewProvider(&metamask.Config{})
+	user, err := provider.Authenticate(c.Req.Context(), req.Address, req.Signature)
+	if err != nil {
+		if auth.IsErrBadCredentials(err) {
+			c.JSON(http.StatusUnauthorized, map[string]string{
+				"error": "Invalid Metamask credentials",
+			})
+		} else {
+			c.Error(err, "authenticate user")
+		}
+		return
+	}
+
+	afterLogin(c, user, true)
 }
