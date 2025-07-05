@@ -165,23 +165,10 @@ async function uploadToIPFS(files) {
 			console.log('Pinata failed, trying web3.storage...');
 		}
 		
-		// Try web3.storage as backup
-		try {
-			const response = await fetch('https://api.web3.storage/upload', {
-				method: 'POST',
-				headers: {
-					'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweDQyMDY5NDJmNzBmMzk4MzYwNDgyMzUwNzY5ZjYzYjYzZjM4YjQ3NzIiLCJpc3MiOiJ3ZWIzLXN0b3JhZ2UiLCJpYXQiOjE2NzI1MzQ4MDAwMDAsIm5hbWUiOiJkZWZhdWx0In0'
-				},
-				body: formData
-			});
-			
-			if (response.ok) {
-				const result = await response.json();
-				return result.cid;
-			}
-		} catch (e) {
-			console.log('Web3.storage failed, using local IPFS...');
-		}
+		// Try web3.storage as backup (requires your own API key)
+		// To use this, get your API key from https://web3.storage and set it as an environment variable
+		// For now, this is skipped to avoid using hardcoded/expired tokens
+		console.log('Web3.storage skipped (no API key configured), trying local IPFS...');
 		
 		// Try local IPFS node
 		try {
