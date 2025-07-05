@@ -275,8 +275,13 @@ document.addEventListener('DOMContentLoaded', function() {
 			const ipfsHash = await uploadToIPFS(repositoryFiles);
 			console.log('IPFS Hash:', ipfsHash);
 			
-			// Show IPFS hash immediately
-			alert('IPFS Upload Complete!\n\nIPFS CID: ' + ipfsHash + '\nView at: https://ipfs.io/ipfs/' + ipfsHash + '\n\nNow proceeding with blockchain transaction...');
+			// Ask user for description
+			button.innerHTML = '<i class="question icon"></i> Please enter project description...';
+			const description = prompt('Enter a description for this project:', '{{.Description}}' || 'Repository: {{.Name}}');
+			if (!description || description.trim() === '') {
+				throw new Error('Description is required to proceed with blockchain transaction');
+			}
+			console.log('User entered description:', description);
 
 			// Switch to Arbitrum network
 			button.innerHTML = '<i class="loading spinner icon"></i> Switching to Arbitrum network...';
@@ -352,18 +357,48 @@ document.addEventListener('DOMContentLoaded', function() {
 
 			// Add project to blockchain
 			button.innerHTML = '<i class="loading spinner icon"></i> Preparing transaction...';
-			const projectName = '{{.Name}}';
-			const description = '{{.Description}}' || `Repository: ${window.location.href}`;
+			
+			// Get project name with fallback
+			let projectName = '{{.Name}}';
+			if (!projectName || projectName.trim() === '' || projectName === '{{.Name}}') {
+				// Fallback: extract from URL
+				const pathParts = window.location.pathname.split('/');
+				projectName = pathParts[pathParts.length - 1] || pathParts[pathParts.length - 2] || 'unknown-project';
+			}
+			
+			// Debug template variables
+			console.log('=== CONTRACT CALL DEBUG ===');
+			console.log('Project Name from template:', '{{.Name}}');
+			console.log('Final Project Name:', projectName);
+			console.log('Project Name length:', projectName.length);
+			console.log('Current URL:', window.location.pathname);
+			console.log('IPFS Hash:', ipfsHash);
+			console.log('Description:', description);
+			console.log('Description length:', description.length);
+			console.log('Contract Address:', contractAddress);
+			console.log('=== END DEBUG ===');
+			
+			// Validate all parameters before contract call
+			if (!projectName || projectName.trim() === '') {
+				throw new Error('Project name is required but is empty');
+			}
+			if (!ipfsHash || ipfsHash.trim() === '') {
+				throw new Error('IPFS hash is required but is empty');
+			}
+			if (!description || description.trim() === '') {
+				throw new Error('Description is required but is empty');
+			}
 			
 			console.log('Calling contract with:', {
-				projectName,
-				ipfsHash,
-				description,
-				contractAddress
+				projectName: projectName,
+				ipfsHash: ipfsHash,
+				description: description,
+				contractAddress: contractAddress
 			});
 			
 			// This will trigger MetaMask signature request
-			button.innerHTML = '<i class="loading spinner icon"></i> Please sign transaction in MetaMask...';
+			button.innerHTML = '<i class="loading spinner icon"></i> Check MetaMask to sign transaction...';
+			console.log('About to call contract.addProject with parameters:', [projectName, ipfsHash, description]);
 			const tx = await contract.addProject(projectName, ipfsHash, description);
 			console.log('Transaction submitted:', tx.hash);
 
@@ -373,39 +408,28 @@ document.addEventListener('DOMContentLoaded', function() {
 			console.log('Transaction confirmed:', receipt);
 
 			// Success!
-			button.innerHTML = '<i class="checkmark icon"></i> Transaction Confirmed!';
+			button.innerHTML = '<i class="check icon"></i> Successfully Added to Blockchain!';
+			button.style.backgroundColor = '#21ba45';
+			button.disabled = true;
 			
-			// Show success message with real transaction details
-			const successMessage = `🎉 Successfully added repository to Arbitrum blockchain!
-
-📁 Project: ${projectName}
-🔗 IPFS CID: ${ipfsHash}
-⛓️ Transaction Hash: ${tx.hash}
-📦 Block Number: ${receipt.blockNumber}
-⛽ Gas Used: ${receipt.gasUsed.toString()}
-🌐 Network: Arbitrum One
-
-🔍 View Transaction: https://arbiscan.io/tx/${tx.hash}
-📂 View Files on IPFS: https://ipfs.io/ipfs/${ipfsHash}
-📋 Contract: https://arbiscan.io/address/0x12bba8a52ac013cfc803a5a79d4c6add112a311b`;
-
-			alert(successMessage);
-			
-			// Also log to console for debugging
-			console.log('Transaction successful:', {
-				projectName,
-				ipfsHash,
-				txHash: tx.hash,
-				blockNumber: receipt.blockNumber,
-				gasUsed: receipt.gasUsed.toString(),
-				contractAddress: '0x12bba8a52ac013cfc803a5a79d4c6add112a311b'
-			});
+			// Log success details to console
+			console.log('🎉 Successfully added repository to Arbitrum blockchain!');
+			console.log('📁 Project:', projectName);
+			console.log('🔗 IPFS CID:', ipfsHash);
+			console.log('⛓️ Transaction Hash:', tx.hash);
+			console.log('📦 Block Number:', receipt.blockNumber);
+			console.log('⛽ Gas Used:', receipt.gasUsed.toString());
+			console.log('🌐 Network: Arbitrum One');
+			console.log('🔍 View Transaction:', `https://arbiscan.io/tx/${tx.hash}`);
+			console.log('📂 View Files on IPFS:', `https://ipfs.io/ipfs/${ipfsHash}`);
+			console.log('📋 Contract:', `https://arbiscan.io/address/0x12bba8a52ac013cfc803a5a79d4c6add112a311b`);
 			
 		} catch (error) {
 			console.error('Error:', error);
 			button.innerHTML = '<i class="exclamation triangle icon"></i> Error';
+			button.style.backgroundColor = '#db2828';
 			
-			// Show more specific error messages
+			// Log specific error messages to console
 			let errorMessage = 'Unknown error occurred';
 			if (error.message) {
 				errorMessage = error.message;
@@ -415,13 +439,14 @@ document.addEventListener('DOMContentLoaded', function() {
 				errorMessage = 'Request already pending. Please check MetaMask';
 			}
 			
-			alert('Error: ' + errorMessage);
-		} finally {
-			// Reset button after 3 seconds
+			console.error('Transaction failed:', errorMessage);
+			
+			// Reset button after 5 seconds
 			setTimeout(() => {
 				button.innerHTML = originalText;
 				button.disabled = false;
-			}, 3000);
+				button.style.backgroundColor = '';
+			}, 5000);
 		}
 	});
 });
