@@ -16,3 +16,5 @@ output*
 /release
 .task
 .envrc
+.ipfs_hashes
+.gitx
