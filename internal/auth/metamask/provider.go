@@ -155,7 +155,7 @@ func (p *Provider) Authenticate(ctx context.Context, address, signature string) 
 	log.Info("Authenticating Metamask login - Address: %s", address)
 
 	// First verify the signature
-	message := "Sign this message to login to Gogs"
+	message := "Sign this message to login to 4RealOSS"
 	if !p.verifySignature(message, signature, address) {
 		log.Warn("Invalid signature for address: %s", address)
 		return nil, auth.ErrBadCredentials{Args: map[string]any{
