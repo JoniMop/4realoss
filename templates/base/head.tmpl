@@ -4,9 +4,9 @@
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 	<meta http-equiv="X-UA-Compatible" content="IE=edge"/>
 	{{if not .PageIsAdmin}}
-		<meta name="author" content="{{if .Repository}}{{.Owner.Name}}{{else}}Gogs{{end}}" />
-		<meta name="description" content="{{if .Repository}}{{.Repository.Name}}{{if .Repository.Description}} - {{.Repository.Description}}{{end}}{{else}}Gogs is a painless self-hosted Git service{{end}}" />
-		<meta name="keywords" content="go, git, self-hosted, gogs">
+		<meta name="author" content="{{if .Repository}}{{.Owner.Name}}{{else}}4RealOSS{{end}}" />
+		<meta name="description" content="{{if .Repository}}{{.Repository.Name}}{{if .Repository.Description}} - {{.Repository.Description}}{{end}}{{else}}4RealOSS is a decentralized Git service powered by blockchain and IPFS{{end}}" />
+		<meta name="keywords" content="blockchain, ipfs, git, decentralized, web3, ethereum">
 	{{end}}
 	<meta name="referrer" content="no-referrer" />
 	<meta name="_csrf" content="{{.CSRFToken}}" />
@@ -30,9 +30,9 @@
 		<meta property="og:url" content="{{AppURL}}" />
 		<meta property="og:type" content="website" />
 		<meta property="og:title" content="{{AppName}}">
-		<meta property="og:description" content="Gogs is a painless self-hosted Git service.">
+		<meta property="og:description" content="4RealOSS is a decentralized Git service powered by blockchain and IPFS.">
 		<meta property="og:image" content="{{AppURL}}img/favicon.png" />
-		<meta property="og:site_name" content="Gogs">
+		<meta property="og:site_name" content="4RealOSS">
 	{{end}}
 
 	<link rel="shortcut icon" href="{{AppSubURL}}/img/favicon.png" />
@@ -98,8 +98,8 @@
 					<div class="ui grid">
 						<div class="column">
 							<div class="ui top secondary menu">
-								<a class="item brand" href="{{AppSubURL}}/">
-									<img class="ui mini image" src="{{AppSubURL}}/img/favicon.png">
+								<a class="item brand" href="{{AppSubURL}}/" style="font-weight: bold; color: #2185d0;">
+									<i class="cube icon" style="color: #f39c12; margin-right: 0.5em;"></i>4RealOSS
 								</a>
 
 								{{if .IsLogged}}
@@ -158,7 +158,7 @@
 												<a class="{{if .PageIsUserSettings}}active{{end}} item" href="{{AppSubURL}}/user/settings">
 													<i class="octicon octicon-settings"></i> {{.i18n.Tr "your_settings"}}
 												</a>
-												<a class="item" target="_blank" rel="noopener noreferrer" href="https://gogs.io/docs" rel="noreferrer">
+												<a class="item" target="_blank" rel="noopener noreferrer" href="https://4realoss.org/docs" rel="noreferrer">
 													<i class="octicon octicon-question"></i> {{.i18n.Tr "help"}}
 												</a>
 												{{if .IsAdmin}}
@@ -183,7 +183,7 @@
 
 								{{else}}
 
-									<a class="item" target="_blank" rel="noopener noreferrer" href="https://gogs.io/docs" rel="noreferrer">{{.i18n.Tr "help"}}</a>
+									<a class="item" target="_blank" rel="noopener noreferrer" href="https://4realoss.org/docs" rel="noreferrer">{{.i18n.Tr "help"}}</a>
 									<div class="right menu">
 										{{if .ShowRegistrationButton}}
 											<a class="item{{if .PageIsSignUp}} active{{end}}" href="{{AppSubURL}}/user/sign_up">
