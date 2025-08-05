@@ -510,9 +510,141 @@ document.addEventListener('DOMContentLoaded', function() {
 			console.log('Wallet Address:', resp.publicKey.toString());
 			console.log('=== END DEBUG ===');
 			
-			// For now, we'll simulate the Solana transaction since we need to deploy the program first
-			// TODO: Replace with actual Solana program interaction
-			const simulatedTxHash = 'SOLANA_TX_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+			// Solana Devnet Integration - REAL BLOCKCHAIN!
+			// Using a test program on Solana Devnet for real testing
+			const PROGRAM_ID = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'; // Real Solana program (Token Program for testing)
+			const USE_SIMULATION = false; // REAL MODE - Using actual Solana Devnet!
+			
+			let txHash;
+			if (USE_SIMULATION) {
+				// Simulate realistic Solana transaction
+				solanaButton.innerHTML = '<i class="loading spinner icon"></i> Creating transaction...';
+				await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
+				
+				solanaButton.innerHTML = '<i class="loading spinner icon"></i> Signing transaction...';
+				await new Promise(resolve => setTimeout(resolve, 800));
+				
+				solanaButton.innerHTML = '<i class="loading spinner icon"></i> Broadcasting to Solana...';
+				await new Promise(resolve => setTimeout(resolve, 1200));
+				
+				// Generate realistic-looking Solana transaction hash
+				const chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+				txHash = Array.from({length: 88}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+			} else {
+				// REAL Solana Devnet Transaction with detailed logging!
+				console.log('🚀 Starting REAL Solana transaction...');
+				
+				try {
+					solanaButton.innerHTML = '<i class="loading spinner icon"></i> Connecting to Solana Devnet...';
+					
+					// Check if Solana Web3 is available
+					if (typeof solanaWeb3 === 'undefined') {
+						throw new Error('Solana Web3.js library not loaded. Please refresh the page.');
+					}
+					
+					console.log('📡 Creating Solana connection...');
+					const connection = new solanaWeb3.Connection('https://api.devnet.solana.com', 'confirmed');
+					
+					// Test connection
+					const version = await connection.getVersion();
+					console.log('✅ Connected to Solana Devnet:', version);
+					
+					// Create a simple transaction (memo instruction for testing)
+					console.log('📝 Creating memo transaction...');
+					const transaction = new solanaWeb3.Transaction();
+					
+					// Add memo instruction with repository data
+					const memoData = JSON.stringify({
+						action: 'repository_upload',
+						project: projectName,
+						ipfs: ipfsHash,
+						description: description,
+						timestamp: Date.now(),
+						wallet: resp.publicKey.toString()
+					});
+					
+					console.log('📄 Memo data:', memoData);
+					
+					const memoInstruction = new solanaWeb3.TransactionInstruction({
+						keys: [{pubkey: resp.publicKey, isSigner: true, isWritable: false}],
+						programId: new solanaWeb3.PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'), // Memo program
+						data: new TextEncoder().encode(memoData) // Browser-compatible way to encode text
+					});
+					
+					transaction.add(memoInstruction);
+					console.log('✅ Transaction instruction added');
+					
+					// Get recent blockhash
+					solanaButton.innerHTML = '<i class="loading spinner icon"></i> Preparing transaction...';
+					console.log('🔗 Getting recent blockhash...');
+					const { blockhash } = await connection.getLatestBlockhash();
+					transaction.recentBlockhash = blockhash;
+					transaction.feePayer = resp.publicKey;
+					
+					console.log('✅ Transaction prepared with blockhash:', blockhash);
+					console.log('💰 Fee payer:', resp.publicKey.toString());
+					
+					// Sign and send transaction
+					solanaButton.innerHTML = '<i class="loading spinner icon"></i> Signing transaction...';
+					console.log('✍️ Requesting signature from Phantom...');
+					console.log('💡 IMPORTANT: Check your Phantom wallet extension for the signature request!');
+					
+					// Update button to show user instruction
+					solanaButton.innerHTML = '<i class="hand point up icon"></i> Check Phantom Wallet for Signature Request';
+					
+					// Try using signAndSendTransaction (simpler approach)
+					try {
+						console.log('🚀 Attempting signAndSendTransaction...');
+						const { signature } = await window.solana.signAndSendTransaction(transaction);
+						txHash = signature;
+						console.log('✅ Transaction signed and sent! Hash:', txHash);
+						
+						// Wait for confirmation
+						solanaButton.innerHTML = '<i class="loading spinner icon"></i> Confirming transaction...';
+						console.log('⏳ Waiting for confirmation...');
+						const confirmation = await connection.confirmTransaction(txHash);
+						console.log('✅ Transaction confirmed!', confirmation);
+						
+					} catch (signAndSendError) {
+						console.log('⚠️ signAndSendTransaction failed, trying manual approach...', signAndSendError);
+						
+						// Fallback to manual sign + send
+						const signTransactionWithTimeout = new Promise((resolve, reject) => {
+							const timeout = setTimeout(() => {
+								reject(new Error('Signature request timed out after 30 seconds. Please check your Phantom wallet and try again.'));
+							}, 30000); // 30 second timeout
+							
+							window.solana.signTransaction(transaction)
+								.then(result => {
+									clearTimeout(timeout);
+									resolve(result);
+								})
+								.catch(error => {
+									clearTimeout(timeout);
+									reject(error);
+								});
+						});
+						
+						const signedTransaction = await signTransactionWithTimeout;
+						console.log('✅ Transaction signed successfully');
+						
+						solanaButton.innerHTML = '<i class="loading spinner icon"></i> Broadcasting to Solana Devnet...';
+						console.log('📡 Sending transaction to network...');
+						txHash = await connection.sendRawTransaction(signedTransaction.serialize());
+						console.log('✅ Transaction sent! Hash:', txHash);
+						
+						// Wait for confirmation
+						solanaButton.innerHTML = '<i class="loading spinner icon"></i> Confirming transaction...';
+						console.log('⏳ Waiting for confirmation...');
+						const confirmation = await connection.confirmTransaction(txHash);
+						console.log('✅ Transaction confirmed!', confirmation);
+					}
+					
+				} catch (solanaError) {
+					console.error('❌ Solana transaction error:', solanaError);
+					throw new Error('Solana transaction failed: ' + solanaError.message);
+				}
+			}
 			
 			// Success
 			solanaButton.innerHTML = '<i class="checkmark icon"></i> Success!';
@@ -522,19 +654,23 @@ document.addEventListener('DOMContentLoaded', function() {
 			console.log('📊 Transaction Summary:');
 			console.log('  📁 Project:', projectName);
 			console.log('  📝 Description:', description);
-			console.log('  🌐 Network: Solana Devnet');
+			console.log('  🌐 Network: Solana Devnet (REAL!)');
+			console.log('  🔍 Explorer: https://explorer.solana.com/tx/' + txHash + '?cluster=devnet');
 			console.log('  💼 Wallet:', resp.publicKey.toString());
 			console.log('  🔗 IPFS Hash:', ipfsHash);
-			console.log('  🧾 Transaction Hash:', simulatedTxHash);
+			console.log('  🧾 Transaction Hash:', txHash);
 			console.log('  ✅ Recorded immutably on Solana blockchain');
 			console.log('  🌍 IPFS Gateway:', 'https://ipfs.io/ipfs/' + ipfsHash);
 			
-			alert('🎉 Success!\\n\\n' +
-				'Your repository has been uploaded to IPFS and recorded on Solana blockchain!\\n\\n' +
+			alert('🎉 SUCCESS - REAL SOLANA TRANSACTION!\\n\\n' +
+				'Your repository has been uploaded to IPFS and recorded on Solana Devnet!\\n\\n' +
 				'📁 Project: ' + projectName + '\\n' +
 				'🔗 IPFS: ' + ipfsHash + '\\n' +
-				'🧾 Solana TX: ' + simulatedTxHash + '\\n\\n' +
-				'View on IPFS: https://ipfs.io/ipfs/' + ipfsHash);
+				'🧾 Solana TX: ' + txHash + '\\n\\n' +
+				'🔍 View on Solana Explorer:\\n' +
+				'https://explorer.solana.com/tx/' + txHash + '?cluster=devnet\\n\\n' +
+				'📁 View on IPFS:\\n' +
+				'https://ipfs.io/ipfs/' + ipfsHash);
 			
 		} catch (error) {
 			console.error('❌ Solana upload error:', error);
