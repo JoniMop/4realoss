@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solana Wallet Integration Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .button {
+            background: #9945FF;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        .button:hover {
+            background: #7A3CD8;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background: #D4EDDA;
+            color: #155724;
+            border: 1px solid #C3E6CB;
+        }
+        .error {
+            background: #F8D7DA;
+            color: #721C24;
+            border: 1px solid #F5C6CB;
+        }
+        .info {
+            background: #D1ECF1;
+            color: #0C5460;
+            border: 1px solid #BEE5EB;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔗 Solana Wallet Integration Test</h1>
+    
+    <div id="status" class="status info">
+        <strong>Status:</strong> Ready to test Solana wallet connection
+    </div>
+    
+    <button class="button" onclick="testSolanaConnection()">
+        🔗 Connect Solana Wallet
+    </button>
+    
+    <button class="button" onclick="testSignature()" id="signButton" style="display: none;">
+        ✍️ Test Signature
+    </button>
+    
+    <div id="results"></div>
+
+    <script>
+        let connectedAddress = null;
+        
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${type}`;
+            statusDiv.innerHTML = `<strong>Status:</strong> ${message}`;
+        }
+        
+        function addResult(message, type = 'info') {
+            const resultsDiv = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.innerHTML = message;
+            resultsDiv.appendChild(div);
+        }
+        
+        async function testSolanaConnection() {
+            try {
+                updateStatus('Checking for Solana wallet...', 'info');
+                
+                if (typeof window.solana === 'undefined') {
+                    updateStatus('❌ No Solana wallet detected. Please install Phantom or another Solana wallet.', 'error');
+                    addResult('💡 <strong>Installation Guide:</strong><br>' +
+                             '1. Install <a href="https://phantom.app" target="_blank">Phantom Wallet</a><br>' +
+                             '2. Create or import a wallet<br>' +
+                             '3. Refresh this page and try again', 'info');
+                    return;
+                }
+                
+                updateStatus('Requesting wallet connection...', 'info');
+                
+                const accounts = await window.solana.request({ method: 'connect' });
+                connectedAddress = accounts.publicKey.toString();
+                
+                updateStatus(`✅ Connected to Solana wallet: ${connectedAddress.substring(0, 8)}...`, 'success');
+                addResult(`🔗 <strong>Connected Address:</strong> ${connectedAddress}`, 'success');
+                
+                // Show signature test button
+                document.getElementById('signButton').style.display = 'inline-block';
+                
+            } catch (err) {
+                updateStatus(`❌ Connection failed: ${err.message}`, 'error');
+                addResult(`🚫 <strong>Error:</strong> ${err.message}`, 'error');
+            }
+        }
+        
+        async function testSignature() {
+            if (!connectedAddress) {
+                updateStatus('❌ Please connect wallet first', 'error');
+                return;
+            }
+            
+            try {
+                updateStatus('Requesting signature...', 'info');
+                
+                const message = "Sign this message to login to 4RealOSS";
+                const encodedMessage = new TextEncoder().encode(message);
+                
+                const signature = await window.solana.signMessage(encodedMessage, 'utf8');
+                const signatureBase64 = btoa(String.fromCharCode(...new Uint8Array(signature.signature)));
+                
+                updateStatus('✅ Signature created successfully!', 'success');
+                addResult(`✍️ <strong>Message:</strong> ${message}`, 'info');
+                addResult(`🔐 <strong>Signature (Base64):</strong> ${signatureBase64}`, 'success');
+                addResult(`📝 <strong>Signature Length:</strong> ${signature.signature.length} bytes`, 'info');
+                
+                // Test backend verification (simulate)
+                addResult(`🔄 <strong>Backend Test:</strong> Ready to send to /user/login/solana`, 'info');
+                
+            } catch (err) {
+                updateStatus(`❌ Signature failed: ${err.message}`, 'error');
+                addResult(`🚫 <strong>Error:</strong> ${err.message}`, 'error');
+            }
+        }
+        
+        // Check for wallet on page load
+        window.addEventListener('load', () => {
+            if (typeof window.solana !== 'undefined') {
+                updateStatus('✅ Solana wallet detected! Click "Connect" to test.', 'success');
+            } else {
+                updateStatus('❌ No Solana wallet detected. Please install Phantom.', 'error');
+            }
+        });
+    </script>
+</body>
+</html> 

@@ -59,13 +59,17 @@
 						</div>
 					{{end}}
 
-					<!-- Metamask Login Button -->
+					<!-- Wallet Login Buttons -->
 					<div class="ui divider"></div>
 					<div class="inline field">
 						<label></label>
 						<button type="button" class="ui orange button" id="metamask-login">
 							<img src="{{AppSubURL}}/img/metamask.svg" alt="Metamask" style="height: 1.2em; margin-right: 0.5em; vertical-align: middle;">
 							Login with Metamask
+						</button>
+						<button type="button" class="ui purple button" id="solana-login">
+							<img src="{{AppSubURL}}/img/solana.svg" alt="Solana" style="height: 1.2em; margin-right: 0.5em; vertical-align: middle;">
+							Login with Solana
 						</button>
 					</div>
 				</div>
@@ -128,6 +132,81 @@ document.getElementById('metamask-login').addEventListener('click', async () => 
 	} catch (err) {
 		console.error('Metamask login error:', err);
 		alert('Failed to login with Metamask: ' + err.message);
+	}
+});
+
+// Solana Wallet Integration Script
+document.getElementById('solana-login').addEventListener('click', async () => {
+	if (typeof window.solana === 'undefined') {
+		alert('Please install Phantom or another Solana wallet to use this feature');
+		return;
+	}
+
+	try {
+		// Check if wallet is already connected
+		console.log('Checking Solana wallet connection...');
+		let response = await window.solana.connect();
+		const address = response.publicKey.toString();
+		console.log('Connected Solana address:', address);
+
+		// Get the message to sign
+		const message = "Sign this message to login to 4RealOSS";
+		console.log('Message to sign:', message);
+		
+		// Get the signature
+		console.log('Requesting Solana signature...');
+		const encodedMessage = new TextEncoder().encode(message);
+		const signResult = await window.solana.signMessage(encodedMessage, 'utf8');
+		console.log('Received Solana signature result:', signResult);
+
+		// Convert signature to base64
+		const signatureBase64 = btoa(String.fromCharCode(...new Uint8Array(signResult.signature)));
+		console.log('Base64 signature:', signatureBase64);
+
+		// Prepare the request body
+		const requestBody = {
+			address: address,
+			signature: signatureBase64
+		};
+		console.log('Sending to backend:', requestBody);
+
+		// Send to backend for verification
+		const backendResponse = await fetch('{{AppSubURL}}/user/login/solana', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'X-CSRF-Token': document.querySelector('input[name="_csrf"]').value
+			},
+			body: JSON.stringify(requestBody)
+		});
+
+		console.log('Backend response status:', backendResponse.status);
+		console.log('Backend response headers:', backendResponse.headers);
+
+		if (backendResponse.ok) {
+			console.log('Login successful, redirecting...');
+			window.location.href = '{{AppSubURL}}/';
+		} else {
+			// Try to get response text first
+			const responseText = await backendResponse.text();
+			console.error('Backend response text:', responseText);
+			
+			if (responseText) {
+				try {
+					const data = JSON.parse(responseText);
+					console.error('Solana login error response:', data);
+					alert(data.error || 'Failed to login with Solana wallet');
+				} catch (parseErr) {
+					console.error('Failed to parse error response:', parseErr);
+					alert('Server error: ' + responseText);
+				}
+			} else {
+				alert('Server returned empty response. Status: ' + backendResponse.status);
+			}
+		}
+	} catch (err) {
+		console.error('Solana login error:', err);
+		alert('Failed to login with Solana wallet: ' + err.message);
 	}
 });
 </script>

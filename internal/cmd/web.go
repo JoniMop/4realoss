@@ -203,6 +203,7 @@ func runWeb(c *cli.Context) error {
 				m.Combo("/two_factor_recovery_code").Get(user.LoginTwoFactorRecoveryCode).
 					Post(user.LoginTwoFactorRecoveryCodePost)
 				m.Post("/metamask", user.LoginMetamask)
+				m.Post("/solana", user.LoginSolana)
 			})
 
 			m.Get("/sign_up", user.SignUp)

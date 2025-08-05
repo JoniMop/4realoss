@@ -18,6 +18,7 @@ import (
 
 	"gogs.io/gogs/internal/auth"
 	"gogs.io/gogs/internal/auth/metamask"
+	"gogs.io/gogs/internal/auth/solana"
 	"gogs.io/gogs/internal/conf"
 	"gogs.io/gogs/internal/context"
 	"gogs.io/gogs/internal/database"
@@ -657,6 +658,35 @@ func LoginMetamask(c *context.Context) {
 		if auth.IsErrBadCredentials(err) {
 			c.JSON(http.StatusUnauthorized, map[string]string{
 				"error": "Invalid Metamask credentials",
+			})
+		} else {
+			c.Error(err, "authenticate user")
+		}
+		return
+	}
+
+	afterLogin(c, user, true)
+}
+
+type SolanaLoginRequest struct {
+	Address   string `json:"address"`
+	Signature string `json:"signature"`
+}
+
+// LoginSolana handles Solana wallet login requests
+func LoginSolana(c *context.Context) {
+	var req SolanaLoginRequest
+	if err := json.NewDecoder(c.Req.Request.Body).Decode(&req); err != nil {
+		c.Error(err, "decode request body")
+		return
+	}
+
+	provider := solana.NewProvider(&solana.Config{})
+	user, err := provider.Authenticate(c.Req.Context(), req.Address, req.Signature)
+	if err != nil {
+		if auth.IsErrBadCredentials(err) {
+			c.JSON(http.StatusUnauthorized, map[string]string{
+				"error": "Invalid Solana wallet credentials",
 			})
 		} else {
 			c.Error(err, "authenticate user")
