@@ -318,9 +318,7 @@ Revenue Distribution:
 ## Contact & Resources
 
 - **Website**: [4realoss.com](https://4realoss.com)
-- **GitHub**: [github.com/4realoss](https://github.com/4realoss)
-- **Discord**: [discord.gg/4realoss](https://discord.gg/4realoss)
-- **Twitter**: [@4realoss](https://twitter.com/4realoss)
+- **Telegram**: [github.com/4realoss](https://github.com/4realoss)
 
 ---
 
