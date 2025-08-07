@@ -1,0 +1,81 @@
+{{template "base/head" .}}
+<div class="home">
+	<div class="ui stackable middle very relaxed page grid">
+		<div class="sixteen wide center aligned centered column">
+			<div class="hero">
+				<h1 class="ui massive header" style="color: #2185d0; font-weight: 300; margin-bottom: 0.5em;">
+					<i class="cube icon" style="color: #f39c12;"></i>
+					4<span style="color: #e74c3c;">Real</span><span style="color: #27ae60;">OSS</span>
+				</h1>
+				<h2 style="color: #7f8c8d; font-weight: 300;">{{.i18n.Tr "app_desc"}}</h2>
+			</div>
+		</div>
+	</div>
+	
+	<div class="ui stackable middle very relaxed page grid">
+		<div class="eight wide center column">
+			<h1 class="hero ui icon header">
+				<i class="octicon octicon-globe"></i> Decentralized Storage
+			</h1>
+			<p class="large">
+				Every repository can be backed up to <strong>IPFS</strong> (InterPlanetary File System), within a click, ensuring your code is distributed across the network and always accessible. No single point of failure.
+			</p>
+		</div>
+		<div class="eight wide center column">
+			<h1 class="hero ui icon header">
+				<i class="octicon octicon-shield"></i> Blockchain Verified
+			</h1>
+			<p class="large">
+				Project metadata is secured on <strong>Ethereum/Arbitrum</strong> blockchain, providing immutable proof of ownership, version history, and collaboration records that can't be tampered with.
+			</p>
+		</div>
+	</div>
+	<div class="ui stackable middle very relaxed page grid">
+		<div class="eight wide center column">
+			<h1 class="hero ui icon header">
+				<i class="octicon octicon-rocket"></i> True Open Source
+			</h1>
+			<p class="large">
+				4RealOSS ensures your open source projects remain truly open and accessible forever. Even if our servers go down, your code lives on through IPFS and blockchain records.
+			</p>
+		</div>
+		<div class="eight wide center column">
+			<h1 class="hero ui icon header">
+				<i class="octicon octicon-organization"></i> Web3 Collaboration
+			</h1>
+			<p class="large">
+				Connect your wallet to authenticate, contribute to projects, and participate in decentralized governance. Your contributions are cryptographically signed and permanently recorded.
+			</p>
+		</div>
+	</div>
+	<div class="ui stackable middle very relaxed page grid">
+		<div class="sixteen wide center aligned centered column">
+			<div class="ui horizontal divider">
+				<i class="octicon octicon-code"></i>
+			</div>
+			<h2 class="ui header">
+				The Future of Code Hosting
+				<div class="sub header">Powered by blockchain, secured by IPFS, owned by the community</div>
+			</h2>
+			<p class="large">
+				4RealOSS combines the familiar Git workflow you know and love with cutting-edge Web3 technologies. 
+				Host your code with confidence knowing it's truly decentralized, censorship-resistant, and will outlast any single organization.
+			</p>
+			<div class="ui large labels">
+				<div class="ui label">
+					<i class="ethereum icon"></i> Ethereum
+				</div>
+				<div class="ui label">
+					<i class="cube icon"></i> IPFS
+				</div>
+				<div class="ui label">
+					<i class="git icon"></i> Git
+				</div>
+				<div class="ui label">
+					<i class="lock icon"></i> Decentralized
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+{{template "base/footer" .}}

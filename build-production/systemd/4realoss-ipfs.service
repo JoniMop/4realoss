@@ -1,0 +1,20 @@
+[Unit]
+Description=4REALOSS IPFS Daemon
+After=network.target
+Before=4realoss.service
+
+[Service]
+Type=notify
+User=root
+WorkingDirectory=/root
+ExecStart=/usr/local/bin/ipfs daemon --enable-gc
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Environment
+Environment=IPFS_PATH=/root/.ipfs
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,22 @@
+[Unit]
+Description=4REALOSS Git Service
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/4realoss
+ExecStart=/opt/4realoss/realoss web --config /opt/4realoss/conf/app.ini
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Environment
+Environment=USER=root
+Environment=HOME=/root
+Environment=GOGS_WORK_DIR=/opt/4realoss
+
+[Install]
+WantedBy=multi-user.target

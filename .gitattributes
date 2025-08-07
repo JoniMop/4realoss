@@ -1,0 +1,14 @@
+conf/gitignore/** linguist-vendored
+conf/license/** linguist-vendored
+public/assets/** linguist-vendored
+public/plugins/** linguist-vendored
+public/css/themes/** linguist-vendored
+public/css/semantic-* linguist-vendored
+public/js/libs/** linguist-vendored
+public/js/semantic-* linguist-vendored
+# Temporarily disabled LFS for initial GitHub push
+# *.exe filter=lfs diff=lfs merge=lfs -text
+# realoss filter=lfs diff=lfs merge=lfs -text
+# gogs filter=lfs diff=lfs merge=lfs -text
+# build-production/* filter=lfs diff=lfs merge=lfs -text
+# build-production/realoss filter=lfs diff=lfs merge=lfs -text

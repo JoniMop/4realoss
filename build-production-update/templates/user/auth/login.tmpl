@@ -1,0 +1,182 @@
+{{template "base/head" .}}
+<div class="user signin">
+	<div class="ui middle very relaxed page grid">
+		<div class="column">
+			<form class="ui form" action="{{.Link}}" method="post">
+				{{.CSRFTokenHTML}}
+				<h3 class="ui top attached header">
+					{{.i18n.Tr "sign_in"}}
+				</h3>
+				<div class="ui attached segment">
+					{{template "base/alert" .}}
+					<div class="required inline field {{if .Err_UserName}}error{{end}}">
+						<label for="user_name">{{.i18n.Tr "home.uname_holder"}}</label>
+						<input id="user_name" name="user_name" value="{{.user_name}}" autofocus required>
+					</div>
+					<div class="required inline field {{if .Err_Password}}error{{end}}">
+						<label for="password">{{.i18n.Tr "password"}}</label>
+						<input id="password" name="password" type="password" autocomplete="off" value="{{.password}}" required>
+					</div>
+					{{if .LoginSources}}
+						<div class="required inline field {{if .Err_LoginSource}}error{{end}}">
+							<label>{{.i18n.Tr "auth.auth_source"}}</label>
+							<div class="ui selection dropdown">
+								<input type="hidden" id="login_source" name="login_source" value="{{.login_source}}" required>
+								<span class="text">
+									{{if .DefaultLoginSource}}
+										{{.DefaultLoginSource.Name}}
+									{{else}}
+										{{.i18n.Tr "auth.local"}}
+									{{end}}
+								</span>
+								<i class="dropdown icon"></i>
+								<div class="menu">
+									<div class="item" data-value="0">{{.i18n.Tr "auth.local"}}</div>
+									{{range .LoginSources}}
+										<div class="item" data-value="{{.ID}}">{{.Name}}</div>
+									{{end}}
+								</div>
+							</div>
+						</div>
+					{{end}}
+					<div class="inline field">
+						<label></label>
+						<div class="ui checkbox">
+							<label>{{.i18n.Tr "auth.remember_me"}}</label>
+							<input name="remember" type="checkbox">
+						</div>
+					</div>
+
+					<div class="inline field">
+						<label></label>
+						<button class="ui green button">{{.i18n.Tr "sign_in"}}</button>
+						<a href="{{AppSubURL}}/user/forget_password">{{.i18n.Tr "auth.forget_password"}}</a>
+					</div>
+					{{if .ShowRegistrationButton}}
+						<div class="inline field">
+							<label></label>
+							<a href="{{AppSubURL}}/user/sign_up">{{.i18n.Tr "auth.sign_up_now" | Str2HTML}}</a>
+						</div>
+					{{end}}
+
+					<!-- Unified Wallet Login -->
+					<div class="ui divider"></div>
+					<div class="inline field">
+						<label></label>
+						<button type="button" id="connect-wallet-btn" style="
+							background: #000;
+							color: #fff;
+							border: none;
+							border-radius: 12px;
+							padding: 12px 24px;
+							font-size: 16px;
+							font-weight: 500;
+							cursor: pointer;
+							transition: all 0.2s ease;
+							display: inline-flex;
+							align-items: center;
+							gap: 8px;
+							min-width: 160px;
+							justify-content: center;
+						">
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<rect x="3" y="5" width="18" height="14" rx="2" ry="2"/>
+								<polyline points="3,10 12,15 21,10"/>
+							</svg>
+							Connect Wallet
+						</button>
+					</div>
+					<div class="inline field">
+						<label></label>
+						<div class="ui small text" style="color: #666; font-size: 13px; text-align: center; margin-top: 8px;">
+							Connect with Phantom, MetaMask, or 10+ other wallets
+						</div>
+					</div>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+
+<!-- Wallet Button Hover Effects -->
+<style>
+#connect-wallet-btn:hover {
+	background: #333 !important;
+	transform: translateY(-1px);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+#connect-wallet-btn:active {
+	transform: translateY(0);
+}
+
+#connect-wallet-btn:disabled {
+	background: #ccc !important;
+	cursor: not-allowed;
+	transform: none !important;
+}
+</style>
+
+<!-- Unified Wallet Login Script -->
+<script src="{{AppSubURL}}/js/wallet-connector.js"></script>
+<script>
+document.getElementById('connect-wallet-btn').addEventListener('click', async () => {
+	try {
+		// Show wallet connection modal
+		const walletConnection = await window.walletConnector.showConnectModal();
+		console.log('Wallet connected:', walletConnection);
+
+		// Sign login message
+		const message = "Sign this message to login to 4RealOSS";
+		const signature = await window.walletConnector.signMessage(message, walletConnection);
+
+		// Prepare request body
+		const requestBody = {
+			address: walletConnection.address,
+			signature: signature
+		};
+
+		// Send to appropriate backend endpoint
+		let loginEndpoint;
+		if (walletConnection.chain === 'solana') {
+			loginEndpoint = '{{AppSubURL}}/user/login/solana';
+		} else {
+			loginEndpoint = '{{AppSubURL}}/user/login/metamask';
+		}
+
+		console.log('Sending login request to:', loginEndpoint);
+		
+		const response = await fetch(loginEndpoint, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'X-CSRF-Token': document.querySelector('input[name="_csrf"]').value
+			},
+			body: JSON.stringify(requestBody)
+		});
+
+		if (response.ok) {
+			console.log('Login successful, redirecting...');
+			window.location.href = '{{AppSubURL}}/';
+		} else {
+			const errorText = await response.text();
+			let errorMessage;
+			try {
+				const errorData = JSON.parse(errorText);
+				errorMessage = errorData.error || 'Login failed';
+			} catch {
+				errorMessage = 'Server error: ' + errorText;
+			}
+			console.error('Login error:', errorMessage);
+			alert('Login failed: ' + errorMessage);
+		}
+	} catch (err) {
+		console.error('Wallet connection error:', err);
+		if (err.message !== 'Connection cancelled') {
+			alert('Connection failed: ' + err.message);
+		}
+	}
+});
+</script>
+
+{{template "base/footer" .}}
