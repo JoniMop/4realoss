@@ -478,6 +478,7 @@ func runWeb(c *cli.Context) error {
 
 		m.Post("/:username/:reponame/action/:action", reqSignIn, context.RepoAssignment(), repo.Action)
 		m.Get("/:username/:reponame/magic-ipfs", reqSignIn, context.RepoAssignment(), repo.MagicIPFS)
+		m.Post("/:username/:reponame/ipfs_upload", reqSignIn, context.RepoAssignment(), repo.MagicIPFS)
 		m.Group("/:username/:reponame", func() {
 			m.Get("/issues", repo.RetrieveLabels, repo.Issues)
 			m.Get("/issues/:index", repo.ViewIssue)

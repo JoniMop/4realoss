@@ -1,0 +1,690 @@
+{{with .Repository}}
+<div class="header-wrapper">
+	<div class="ui container"><!-- start container -->
+		<div class="ui vertically padded grid head"><!-- start grid -->
+			<div class="column"><!-- start column -->
+				<div class="ui header">
+					<div class="ui huge breadcrumb">
+						{{if .UseCustomAvatar}}
+							<img class="ui mini spaced image" src="{{.RelAvatarLink}}">
+							<i class="{{if .IsPrivate}}mega-octicon octicon-lock{{else if .IsUnlisted}}mega-octicon octicon-eye{{else if .IsMirror}}mega-octicon octicon-repo-clone{{else if .IsFork}}mega-octicon octicon-repo-forked{{end}}"></i>
+						{{else}}
+							<i class="mega-octicon octicon-{{if .IsPrivate}}lock{{else if .IsUnlisted}}eye{{else if .IsMirror}}repo-clone{{else if .IsFork}}repo-forked{{else}}repo{{end}}"></i>
+						{{end}}
+						<a href="{{AppSubURL}}/{{.Owner.Name}}">{{.Owner.Name}}</a>
+						<div class="divider"> / </div>
+						<a href="{{$.RepoLink}}">{{.Name}}</a>
+						{{if .IsMirror}}<div class="fork-flag">{{$.i18n.Tr "repo.mirror_from"}} <a target="_blank" rel="noopener noreferrer" href="{{$.Mirror.Address}}">{{$.Mirror.Address}}</a></div>{{end}}
+						{{if .IsFork}}<div class="fork-flag">{{$.i18n.Tr "repo.forked_from"}} <a href="{{.BaseRepo.Link}}">{{SubStr .BaseRepo.RelLink 1 -1}}</a></div>{{end}}
+					</div>
+
+					{{if not $.IsGuest}}
+						<div class="ui right">
+							{{if and $.IsRepositoryAdmin $.IsRepositoryOwner}}
+							<button class="ui teal button" id="unified-ipfs-button">
+								<i class="cloud upload icon"></i> Add to IPFS + Blockchain
+							</button>
+							{{end}}
+							<form class="display inline" action="{{$.RepoLink}}/action/{{if $.IsWatchingRepo}}un{{end}}watch?redirect_to={{$.Link}}" method="POST">
+								{{$.CSRFTokenHTML}}
+								<div class="ui labeled button" tabindex="0">
+									<button class="ui basic button">
+										<i class="eye{{if not $.IsWatchingRepo}} slash outline{{end}} icon"></i>{{if $.IsWatchingRepo}}{{$.i18n.Tr "repo.unwatch"}}{{else}}{{$.i18n.Tr "repo.watch"}}{{end}}
+									</button>
+									<a class="ui basic label" href="{{.Link}}/watchers">
+										{{.NumWatches}}
+									</a>
+								</div>
+							</form>
+							<form class="display inline" action="{{$.RepoLink}}/action/{{if $.IsStaringRepo}}un{{end}}star?redirect_to={{$.Link}}" method="POST">
+								{{$.CSRFTokenHTML}}
+								<div class="ui labeled button" tabindex="0">
+									<button class="ui basic button">
+										<i class="star{{if not $.IsStaringRepo}} outline{{end}} icon"></i>{{if $.IsStaringRepo}}{{$.i18n.Tr "repo.unstar"}}{{else}}{{$.i18n.Tr "repo.star"}}{{end}}
+									</button>
+									<a class="ui basic label" href="{{.Link}}/stars">
+										{{.NumStars}}
+									</a>
+								</div>
+							</form>
+							{{if .CanBeForked}}
+								<div class="ui labeled button" tabindex="0">
+									<a class="ui basic button {{if eq .OwnerID $.LoggedUserID}}poping up{{end}}" href="{{AppSubURL}}/repo/fork/{{.ID}}">
+										<i class="octicon octicon-repo-forked"></i>{{$.i18n.Tr "repo.fork"}}
+									</a>
+									<a class="ui basic label" href="{{.Link}}/forks">
+										{{.NumForks}}
+									</a>
+								</div>
+							{{end}}
+						</div>
+					{{end}}
+				</div>
+			</div><!-- end column -->
+		</div><!-- end grid -->
+	</div><!-- end container -->
+{{end}}
+{{if not .IsDiffCompare}}
+	<div class="ui tabs container">
+		<div class="ui tabular menu navbar">
+			{{if not $.IsGuest}}
+				<a class="{{if .PageIsViewFiles}}active{{end}} item" href="{{.RepoLink}}">
+					<i class="octicon octicon-file-text"></i> {{.i18n.Tr "repo.files"}}
+				</a>
+			{{end}}
+			{{if .Repository.EnableIssues}}
+				<a class="{{if .PageIsIssueList}}active{{end}} item" href="{{.RepoLink}}/issues">
+					<i class="octicon octicon-issue-opened"></i> {{.i18n.Tr "repo.issues"}} {{if not .Repository.EnableExternalTracker}}<span class="ui {{if not .Repository.NumOpenIssues}}gray{{else}}blue{{end}} small label">{{.Repository.NumOpenIssues}}{{end}}</span>
+				</a>
+			{{end}}
+			{{if and .Repository.AllowsPulls (not .IsGuest)}}
+				<a class="{{if .PageIsPullList}}active{{end}} item" href="{{.RepoLink}}/pulls">
+					<i class="octicon octicon-git-pull-request"></i> {{.i18n.Tr "repo.pulls"}} <span class="ui {{if not .Repository.NumOpenPulls}}gray{{else}}blue{{end}} small label">{{.Repository.NumOpenPulls}}</span>
+				</a>
+			{{end}}
+			{{if .Repository.EnableWiki}}
+				<a class="{{if .PageIsWiki}}active{{end}} item" href="{{.RepoLink}}/wiki">
+					<i class="octicon octicon-book"></i> {{.i18n.Tr "repo.wiki"}}
+				</a>
+			{{end}}
+			{{if .IsRepositoryAdmin}}
+				<div class="right menu">
+					<a class="{{if .PageIsSettings}}active{{end}} item" href="{{.RepoLink}}/settings">
+						<i class="octicon octicon-tools"></i> {{.i18n.Tr "repo.settings"}}
+					</a>
+				</div>
+			{{end}}
+		</div>
+	</div>
+	<div class="ui tabs divider"></div>
+{{else}}
+	<div class="ui divider"></div>
+{{end}}
+</div>
+
+<script src="{{AppSubURL}}/js/wallet-connector.js"></script>
+<script>
+// Unified IPFS + Blockchain Upload System
+document.addEventListener('DOMContentLoaded', function() {
+	const unifiedButton = document.getElementById('unified-ipfs-button');
+	if (!unifiedButton) {
+		console.log('Unified IPFS button not found on this page');
+		return;
+	}
+
+	// IPFS upload function
+	async function uploadToIPFS() {
+				resolve();
+			} else if (attempts >= maxAttempts) {
+				reject(new Error('Ethers library failed to load'));
+			} else {
+				setTimeout(checkLibraries, 100);
+			}
+		};
+		checkLibraries();
+	});
+}
+
+// Function to get repository files as individual files
+async function getRepositoryFiles() {
+	try {
+		console.log('📁 Downloading repository as ZIP and extracting files...');
+		
+		// Download the repository archive
+		const response = await fetch('{{$.RepoLink}}/archive/{{$.BranchName}}.zip');
+		if (!response.ok) {
+			throw new Error('Failed to download repository archive');
+		}
+		
+		const arrayBuffer = await response.arrayBuffer();
+		
+		// Use JSZip to extract files
+		if (typeof JSZip === 'undefined') {
+			throw new Error('JSZip library not loaded');
+		}
+		const zip = await JSZip.loadAsync(arrayBuffer);
+		
+		const files = [];
+		const promises = [];
+		
+		// Extract all files from the ZIP
+		zip.forEach((relativePath, file) => {
+			if (!file.dir) {
+				// Remove the root directory prefix (usually repo-name-branch/)
+				const pathParts = relativePath.split('/');
+				const cleanPath = pathParts.slice(1).join('/'); // Remove first part
+				
+				if (cleanPath) { // Skip empty paths
+					promises.push(
+						file.async('text').then(content => {
+							files.push({
+								path: cleanPath,
+								content: content
+							});
+						}).catch(e => {
+							console.warn('Failed to extract file:', cleanPath, e);
+						})
+					);
+				}
+			}
+		});
+		
+		await Promise.all(promises);
+		console.log('📄 Extracted', files.length, 'files from repository');
+		
+		return files;
+	} catch (error) {
+		console.error('Error getting repository files:', error);
+		throw error;
+	}
+}
+
+// Function to upload files to IPFS - MAGIC.SH STYLE
+async function uploadToIPFS() {
+	try {
+		console.log('🪄 [GIT-ARCHIVE-v7-' + Date.now() + '] Starting git archive IPFS upload...');
+		console.log('🚨 GIT ARCHIVE: Uploading only tracked files (clean project) 🚨');
+		
+		// Super simple GET request - just like magic.sh but on server
+		const response = await fetch('{{$.RepoLink}}/magic-ipfs');
+		
+		console.log('📡 Response:', response.status, response.statusText);
+		
+		if (!response.ok) {
+			const errorText = await response.text();
+			console.log('❌ Error:', response.status, errorText);
+			throw new Error(`Server error: ${response.status}`);
+		}
+		
+		const result = await response.json();
+		console.log('✅ Result:', result);
+		
+		if (result.success && result.hash) {
+			console.log('🎉 IPFS Hash:', result.hash);
+			console.log('🌐 View at: https://ipfs.io/ipfs/' + result.hash);
+			return result.hash;
+		} else {
+			throw new Error(result.error || 'Upload failed');
+		}
+	} catch (error) {
+		console.error('🪄 Magic IPFS upload error:', error);
+		throw error;
+	}
+}
+
+// Wait for DOM to load
+document.addEventListener('DOMContentLoaded', function() {
+	const button = document.getElementById('ipfsButton');
+	if (!button) {
+		console.error('IPFS button not found');
+		return;
+	}
+	
+	console.log('IPFS button found, adding event listener');
+	
+	// Test button responsiveness
+	button.addEventListener('mouseenter', function() {
+		console.log('Button hover works');
+	});
+	
+	button.addEventListener('click', async function() {
+		console.log('IPFS button clicked');
+		
+		const originalText = button.innerHTML;
+		
+		try {
+			// Update button to show progress
+			button.innerHTML = '<i class="loading spinner icon"></i> Checking MetaMask...';
+			button.disabled = true;
+			
+			// Check if MetaMask is installed
+			if (typeof window.ethereum === 'undefined') {
+				throw new Error('Please install MetaMask to use this feature');
+			}
+			
+			// Wait for ethers library to be available
+			button.innerHTML = '<i class="loading spinner icon"></i> Loading libraries...';
+			try {
+				await waitForEthers();
+				console.log('Ethers library loaded');
+			} catch (libError) {
+				console.warn('Ethers library not available, continuing without it');
+			}
+			
+			// Request account access
+			button.innerHTML = '<i class="loading spinner icon"></i> Connecting to MetaMask...';
+			const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+			const address = accounts[0].toLowerCase();
+			console.log('Connected account:', address);
+
+			// Download repository files
+			button.innerHTML = '<i class="loading spinner icon"></i> Fetching repository files...';
+			const repositoryFiles = await getRepositoryFiles();
+			console.log('Fetched repository files:', repositoryFiles.length, 'files');
+
+			// Upload to IPFS with pinning
+			button.innerHTML = '<i class="loading spinner icon"></i> Uploading to IPFS + Pinning...';
+			const ipfsHash = await uploadToIPFS(repositoryFiles);
+			console.log('IPFS Hash:', ipfsHash);
+			
+			// Show pinning success in button
+			button.innerHTML = '<i class="loading spinner icon"></i> ✅ Pinned! Preparing blockchain tx...';
+			
+			// Ask user for description
+			button.innerHTML = '<i class="question icon"></i> Please enter project description...';
+			const description = prompt('Enter a description for this project:', '{{.Description}}' || 'Repository: {{.Name}}');
+			if (!description || description.trim() === '') {
+				throw new Error('Description is required to proceed with blockchain transaction');
+			}
+			console.log('User entered description:', description);
+
+			// Switch to Arbitrum network
+			button.innerHTML = '<i class="loading spinner icon"></i> Switching to Arbitrum network...';
+			try {
+				await window.ethereum.request({
+					method: 'wallet_switchEthereumChain',
+					params: [{ chainId: '0xa4b1' }], // Arbitrum One chainId
+				});
+			} catch (switchError) {
+				// This error code indicates that the chain has not been added to MetaMask
+				if (switchError.code === 4902) {
+					try {
+						await window.ethereum.request({
+							method: 'wallet_addEthereumChain',
+							params: [{
+								chainId: '0xa4b1',
+								chainName: 'Arbitrum One',
+								nativeCurrency: {
+									name: 'ETH',
+									symbol: 'ETH',
+									decimals: 18
+								},
+								rpcUrls: ['https://arb1.arbitrum.io/rpc'],
+								blockExplorerUrls: ['https://arbiscan.io/']
+							}]
+						});
+					} catch (addError) {
+						throw new Error('Failed to add Arbitrum network: ' + addError.message);
+					}
+				} else {
+					throw new Error('Failed to switch to Arbitrum network: ' + switchError.message);
+				}
+			}
+
+			// Interact with the Arbitrum contract
+			button.innerHTML = '<i class="loading spinner icon"></i> Connecting to blockchain...';
+			
+			// Ensure ethers is available
+			if (typeof ethers === 'undefined') {
+				throw new Error('Ethers library not loaded. Please refresh the page and try again.');
+			}
+			
+			const provider = new ethers.providers.Web3Provider(window.ethereum);
+			const signer = provider.getSigner();
+			const contractAddress = '0x12bba8a52ac013cfc803a5a79d4c6add112a311b';
+			const contractABI = [
+				{
+					"inputs": [
+						{
+							"internalType": "string",
+							"name": "projectname",
+							"type": "string"
+						},
+						{
+							"internalType": "string",
+							"name": "ipfsCID",
+							"type": "string"
+						},
+						{
+							"internalType": "string",
+							"name": "description",
+							"type": "string"
+						}
+					],
+					"name": "addProject",
+					"outputs": [],
+					"stateMutability": "nonpayable",
+					"type": "function"
+				}
+			];
+
+			const contract = new ethers.Contract(contractAddress, contractABI, signer);
+
+			// Add project to blockchain
+			button.innerHTML = '<i class="loading spinner icon"></i> Preparing transaction...';
+			
+			// Get project name with fallback
+			let projectName = '{{.Name}}';
+			if (!projectName || projectName.trim() === '' || projectName === '{{.Name}}') {
+				// Fallback: extract from URL
+				const pathParts = window.location.pathname.split('/');
+				projectName = pathParts[pathParts.length - 1] || pathParts[pathParts.length - 2] || 'unknown-project';
+			}
+			
+			// Debug template variables
+			console.log('=== CONTRACT CALL DEBUG ===');
+			console.log('Project Name from template:', '{{.Name}}');
+			console.log('Final Project Name:', projectName);
+			console.log('Project Name length:', projectName.length);
+			console.log('Current URL:', window.location.pathname);
+			console.log('IPFS Hash:', ipfsHash);
+			console.log('Description:', description);
+			console.log('Description length:', description.length);
+			console.log('Contract Address:', contractAddress);
+			console.log('=== END DEBUG ===');
+			
+			// Validate all parameters before contract call
+			if (!projectName || projectName.trim() === '') {
+				throw new Error('Project name is required but is empty');
+			}
+			if (!ipfsHash || ipfsHash.trim() === '') {
+				throw new Error('IPFS hash is required but is empty');
+			}
+			if (!description || description.trim() === '') {
+				throw new Error('Description is required but is empty');
+			}
+			
+			console.log('Calling contract with:', {
+				projectName: projectName,
+				ipfsHash: ipfsHash,
+				description: description,
+				contractAddress: contractAddress
+			});
+			
+			// This will trigger MetaMask signature request
+			button.innerHTML = '<i class="loading spinner icon"></i> Check MetaMask to sign transaction...';
+			console.log('About to call contract.addProject with parameters:', [projectName, ipfsHash, description]);
+			const tx = await contract.addProject(projectName, ipfsHash, description);
+			console.log('Transaction submitted:', tx.hash);
+
+			// Wait for transaction confirmation
+			button.innerHTML = '<i class="loading spinner icon"></i> Waiting for confirmation...';
+			const receipt = await tx.wait();
+			console.log('Transaction confirmed:', receipt);
+
+			// Success!
+			button.innerHTML = '<i class="check icon"></i> Pinned & Added to Blockchain!';
+			button.style.backgroundColor = '#21ba45';
+			button.disabled = true;
+			
+			// Log success details to console
+			console.log('🎉 Successfully uploaded, pinned, and added repository to Arbitrum blockchain!');
+			console.log('📁 Project:', projectName);
+			console.log('🔗 IPFS CID:', ipfsHash);
+			console.log('📌 Pinning Status: Content stored with redundancy for permanence');
+			console.log('⛓️ Transaction Hash:', tx.hash);
+			console.log('📦 Block Number:', receipt.blockNumber);
+			console.log('⛽ Gas Used:', receipt.gasUsed.toString());
+			console.log('🌐 Network: Arbitrum One');
+			console.log('');
+			console.log('🔍 View Transaction:', `https://arbiscan.io/tx/${tx.hash}`);
+			console.log('📂 View Files on IPFS:', `https://ipfs.io/ipfs/${ipfsHash}`);
+			console.log('📋 Smart Contract:', `https://arbiscan.io/address/0x12bba8a52ac013cfc803a5a79d4c6add112a311b`);
+			console.log('');
+			console.log('💡 Your repository is now:');
+			console.log('  ✅ Stored on IPFS with pinning for permanence');
+			console.log('  ✅ Recorded immutably on Arbitrum blockchain');
+			console.log('  ✅ Accessible worldwide via decentralized network');
+			
+		} catch (error) {
+			console.error('Error:', error);
+			button.innerHTML = '<i class="exclamation triangle icon"></i> Error';
+			button.style.backgroundColor = '#db2828';
+			
+			// Log specific error messages to console
+			let errorMessage = 'Unknown error occurred';
+			if (error.message) {
+				errorMessage = error.message;
+			} else if (error.code === 4001) {
+				errorMessage = 'User rejected the request';
+			} else if (error.code === -32002) {
+				errorMessage = 'Request already pending. Please check MetaMask';
+			}
+			
+			console.error('Transaction failed:', errorMessage);
+			
+			// Reset button after 5 seconds
+			setTimeout(() => {
+				button.innerHTML = originalText;
+				button.disabled = false;
+				button.style.backgroundColor = '';
+			}, 5000);
+		}
+	});
+
+	// Solana button functionality
+	const solanaButton = document.getElementById('solanaButton');
+	if (!solanaButton) {
+		console.error('Solana button not found');
+		return;
+	}
+	
+	console.log('Solana button found, adding event listener');
+	
+	solanaButton.addEventListener('click', async function() {
+		console.log('[SOLANA-UPLOAD-v1] Solana button clicked!');
+		
+		try {
+			// Reset button state
+			solanaButton.disabled = true;
+			solanaButton.innerHTML = '<i class="loading spinner icon"></i> Initializing...';
+			
+			// Check if Phantom wallet is available
+			if (!window.solana || !window.solana.isPhantom) {
+				throw new Error('Phantom wallet not found. Please install Phantom wallet to use Solana features.');
+			}
+			
+			// Connect to Phantom wallet
+			solanaButton.innerHTML = '<i class="loading spinner icon"></i> Connecting to Phantom wallet...';
+			const resp = await window.solana.connect();
+			console.log('Connected to Phantom wallet:', resp.publicKey.toString());
+			
+			// Upload to IPFS first
+			solanaButton.innerHTML = '<i class="loading spinner icon"></i> Uploading to IPFS...';
+			const ipfsHash = await uploadToIPFS();
+			console.log('IPFS upload successful:', ipfsHash);
+			
+			// Ask user for description
+			solanaButton.innerHTML = '<i class="question icon"></i> Please enter project description...';
+			const description = prompt('Enter a description for this project:', '{{.Description}}' || 'Repository: {{.Name}}');
+			if (!description || description.trim() === '') {
+				throw new Error('Description is required to proceed with Solana transaction');
+			}
+			console.log('User entered description:', description);
+			
+			// Add to Solana blockchain
+			solanaButton.innerHTML = '<i class="loading spinner icon"></i> Adding to Solana blockchain...';
+			
+			// Get project name
+			let projectName = '{{.Name}}';
+			if (!projectName || projectName.trim() === '' || projectName === '{{.Name}}') {
+				const pathParts = window.location.pathname.split('/');
+				projectName = pathParts[pathParts.length - 1] || pathParts[pathParts.length - 2] || 'unknown-project';
+			}
+			
+			console.log('=== SOLANA CONTRACT CALL DEBUG ===');
+			console.log('Project Name:', projectName);
+			console.log('IPFS Hash:', ipfsHash);
+			console.log('Description:', description);
+			console.log('Wallet Address:', resp.publicKey.toString());
+			console.log('=== END DEBUG ===');
+			
+			// Solana Devnet Integration - REAL BLOCKCHAIN!
+			// Using a test program on Solana Devnet for real testing
+			const PROGRAM_ID = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'; // Real Solana program (Token Program for testing)
+			const USE_SIMULATION = false; // REAL MODE - Using actual Solana Devnet!
+			
+			let txHash;
+			if (USE_SIMULATION) {
+				// Simulate realistic Solana transaction
+				solanaButton.innerHTML = '<i class="loading spinner icon"></i> Creating transaction...';
+				await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
+				
+				solanaButton.innerHTML = '<i class="loading spinner icon"></i> Signing transaction...';
+				await new Promise(resolve => setTimeout(resolve, 800));
+				
+				solanaButton.innerHTML = '<i class="loading spinner icon"></i> Broadcasting to Solana...';
+				await new Promise(resolve => setTimeout(resolve, 1200));
+				
+				// Generate realistic-looking Solana transaction hash
+				const chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+				txHash = Array.from({length: 88}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+			} else {
+				// REAL Solana Devnet Transaction with detailed logging!
+				console.log('🚀 Starting REAL Solana transaction...');
+				
+				try {
+					solanaButton.innerHTML = '<i class="loading spinner icon"></i> Connecting to Solana Devnet...';
+					
+					// Check if Solana Web3 is available
+					if (typeof solanaWeb3 === 'undefined') {
+						throw new Error('Solana Web3.js library not loaded. Please refresh the page.');
+					}
+					
+					console.log('📡 Creating Solana connection...');
+					const connection = new solanaWeb3.Connection('https://api.devnet.solana.com', 'confirmed');
+					
+					// Test connection
+					const version = await connection.getVersion();
+					console.log('✅ Connected to Solana Devnet:', version);
+					
+					// Create a simple transaction (memo instruction for testing)
+					console.log('📝 Creating memo transaction...');
+					const transaction = new solanaWeb3.Transaction();
+					
+					// Add memo instruction with repository data
+					const memoData = JSON.stringify({
+						action: 'repository_upload',
+						project: projectName,
+						ipfs: ipfsHash,
+						description: description,
+						timestamp: Date.now(),
+						wallet: resp.publicKey.toString()
+					});
+					
+					console.log('📄 Memo data:', memoData);
+					
+					const memoInstruction = new solanaWeb3.TransactionInstruction({
+						keys: [{pubkey: resp.publicKey, isSigner: true, isWritable: false}],
+						programId: new solanaWeb3.PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'), // Memo program
+						data: new TextEncoder().encode(memoData) // Browser-compatible way to encode text
+					});
+					
+					transaction.add(memoInstruction);
+					console.log('✅ Transaction instruction added');
+					
+					// Get recent blockhash
+					solanaButton.innerHTML = '<i class="loading spinner icon"></i> Preparing transaction...';
+					console.log('🔗 Getting recent blockhash...');
+					const { blockhash } = await connection.getLatestBlockhash();
+					transaction.recentBlockhash = blockhash;
+					transaction.feePayer = resp.publicKey;
+					
+					console.log('✅ Transaction prepared with blockhash:', blockhash);
+					console.log('💰 Fee payer:', resp.publicKey.toString());
+					
+					// Sign and send transaction
+					solanaButton.innerHTML = '<i class="loading spinner icon"></i> Signing transaction...';
+					console.log('✍️ Requesting signature from Phantom...');
+					console.log('💡 IMPORTANT: Check your Phantom wallet extension for the signature request!');
+					
+					// Update button to show user instruction
+					solanaButton.innerHTML = '<i class="hand point up icon"></i> Check Phantom Wallet for Signature Request';
+					
+					// Try using signAndSendTransaction (simpler approach)
+					try {
+						console.log('🚀 Attempting signAndSendTransaction...');
+						const { signature } = await window.solana.signAndSendTransaction(transaction);
+						txHash = signature;
+						console.log('✅ Transaction signed and sent! Hash:', txHash);
+						
+						// Wait for confirmation
+						solanaButton.innerHTML = '<i class="loading spinner icon"></i> Confirming transaction...';
+						console.log('⏳ Waiting for confirmation...');
+						const confirmation = await connection.confirmTransaction(txHash);
+						console.log('✅ Transaction confirmed!', confirmation);
+						
+					} catch (signAndSendError) {
+						console.log('⚠️ signAndSendTransaction failed, trying manual approach...', signAndSendError);
+						
+						// Fallback to manual sign + send
+						const signTransactionWithTimeout = new Promise((resolve, reject) => {
+							const timeout = setTimeout(() => {
+								reject(new Error('Signature request timed out after 30 seconds. Please check your Phantom wallet and try again.'));
+							}, 30000); // 30 second timeout
+							
+							window.solana.signTransaction(transaction)
+								.then(result => {
+									clearTimeout(timeout);
+									resolve(result);
+								})
+								.catch(error => {
+									clearTimeout(timeout);
+									reject(error);
+								});
+						});
+						
+						const signedTransaction = await signTransactionWithTimeout;
+						console.log('✅ Transaction signed successfully');
+						
+						solanaButton.innerHTML = '<i class="loading spinner icon"></i> Broadcasting to Solana Devnet...';
+						console.log('📡 Sending transaction to network...');
+						txHash = await connection.sendRawTransaction(signedTransaction.serialize());
+						console.log('✅ Transaction sent! Hash:', txHash);
+						
+						// Wait for confirmation
+						solanaButton.innerHTML = '<i class="loading spinner icon"></i> Confirming transaction...';
+						console.log('⏳ Waiting for confirmation...');
+						const confirmation = await connection.confirmTransaction(txHash);
+						console.log('✅ Transaction confirmed!', confirmation);
+					}
+					
+				} catch (solanaError) {
+					console.error('❌ Solana transaction error:', solanaError);
+					throw new Error('Solana transaction failed: ' + solanaError.message);
+				}
+			}
+			
+			// Success
+			solanaButton.innerHTML = '<i class="checkmark icon"></i> Success!';
+			solanaButton.style.backgroundColor = '#21ba45';
+			
+			console.log('🎉 Successfully uploaded, pinned, and added repository to Solana blockchain!');
+			console.log('📊 Transaction Summary:');
+			console.log('  📁 Project:', projectName);
+			console.log('  📝 Description:', description);
+			console.log('  🌐 Network: Solana Devnet (REAL!)');
+			console.log('  🔍 Explorer: https://explorer.solana.com/tx/' + txHash + '?cluster=devnet');
+			console.log('  💼 Wallet:', resp.publicKey.toString());
+			console.log('  🔗 IPFS Hash:', ipfsHash);
+			console.log('  🧾 Transaction Hash:', txHash);
+			console.log('  ✅ Recorded immutably on Solana blockchain');
+			console.log('  🌍 IPFS Gateway:', 'https://ipfs.io/ipfs/' + ipfsHash);
+			
+			alert('🎉 SUCCESS - REAL SOLANA TRANSACTION!\\n\\n' +
+				'Your repository has been uploaded to IPFS and recorded on Solana Devnet!\\n\\n' +
+				'📁 Project: ' + projectName + '\\n' +
+				'🔗 IPFS: ' + ipfsHash + '\\n' +
+				'🧾 Solana TX: ' + txHash + '\\n\\n' +
+				'🔍 View on Solana Explorer:\\n' +
+				'https://explorer.solana.com/tx/' + txHash + '?cluster=devnet\\n\\n' +
+				'📁 View on IPFS:\\n' +
+				'https://ipfs.io/ipfs/' + ipfsHash);
+			
+		} catch (error) {
+			console.error('❌ Solana upload error:', error);
+			solanaButton.innerHTML = '<i class="exclamation triangle icon"></i> Error: ' + error.message;
+			solanaButton.style.backgroundColor = '#db2828';
+			
+			alert('❌ Error: ' + error.message);
+		} finally {
+			// Reset button after 5 seconds
+			setTimeout(() => {
+				solanaButton.innerHTML = '<i class="cloud upload icon"></i> Push to IPFS & Solana (+ Pin)';
+				solanaButton.disabled = false;
+				solanaButton.style.backgroundColor = '';
+			}, 5000);
+		}
+	});
+});
+</script>

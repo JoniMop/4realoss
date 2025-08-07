@@ -12,10 +12,10 @@ import (
 
 // IPFSUploadResponse represents the response from IPFS upload
 type IPFSUploadResponse struct {
-	Success bool   `json:"success"`
-	Hash    string `json:"hash,omitempty"`
-	Error   string `json:"error,omitempty"`
-	Gateway string `json:"gateway,omitempty"`
+	Success  bool   `json:"success"`
+	IPFSHash string `json:"ipfsHash,omitempty"`
+	Error    string `json:"error,omitempty"`
+	Gateway  string `json:"gateway,omitempty"`
 }
 
 // MagicIPFS handles IPFS upload using magic.sh style approach
@@ -62,8 +62,8 @@ func MagicIPFS(c *context.Context) {
 	
 	// Return success response
 	c.JSON(http.StatusOK, IPFSUploadResponse{
-		Success: true,
-		Hash:    ipfsHash,
-		Gateway: fmt.Sprintf("https://ipfs.io/ipfs/%s", ipfsHash),
+		Success:  true,
+		IPFSHash: ipfsHash,
+		Gateway:  fmt.Sprintf("https://ipfs.io/ipfs/%s", ipfsHash),
 	})
 }

@@ -40,17 +40,62 @@
 
 	<script src="{{AppSubURL}}/js/jquery-3.6.0.min.js"></script>
 	<script src="{{AppSubURL}}/js/libs/jquery.are-you-sure.js"></script>
-	<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js" onerror="loadEthersFallback()"></script>
-	<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-	<script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
-	<script src="https://unpkg.com/borsh@0.7.0/lib/index.umd.js"></script>
 	<script>
-		function loadEthersFallback() {
-			console.log('Primary ethers CDN failed, loading fallback...');
-			const script = document.createElement('script');
-			script.src = 'https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js';
-			document.head.appendChild(script);
+		// Load external blockchain libraries with error handling
+		function loadExternalLibraries() {
+			// Load Ethers.js
+			const ethersScript = document.createElement('script');
+			ethersScript.src = 'https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js';
+			ethersScript.onerror = function() {
+				console.log('Ethers.js CDN failed, trying fallback...');
+				const fallbackScript = document.createElement('script');
+				fallbackScript.src = 'https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js';
+				fallbackScript.onerror = function() {
+					console.warn('Ethers.js library failed to load - Ethereum features will be disabled');
+				};
+				document.head.appendChild(fallbackScript);
+			};
+			document.head.appendChild(ethersScript);
+
+			// Load JSZip
+			const jszipScript = document.createElement('script');
+			jszipScript.src = 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
+			jszipScript.onerror = function() {
+				console.warn('JSZip library failed to load - some features may be limited');
+			};
+			document.head.appendChild(jszipScript);
+
+			// Load Solana Web3.js
+			const solanaScript = document.createElement('script');
+			solanaScript.src = 'https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js';
+			solanaScript.onerror = function() {
+				console.warn('Solana Web3.js library failed to load - Solana features will be disabled');
+				// Create a minimal mock to prevent errors
+				window.solanaWeb3 = {
+					Connection: function() { throw new Error('Solana Web3 not available'); },
+					Transaction: function() { throw new Error('Solana Web3 not available'); },
+					TransactionInstruction: function() { throw new Error('Solana Web3 not available'); },
+					PublicKey: function() { throw new Error('Solana Web3 not available'); }
+				};
+			};
+			document.head.appendChild(solanaScript);
+
+			// Load Borsh (optional for advanced Solana features) - use different CDN
+			const borshScript = document.createElement('script');
+			borshScript.src = 'https://cdn.jsdelivr.net/npm/borsh@0.7.0/lib/index.umd.min.js';
+			borshScript.onerror = function() {
+				console.warn('Borsh library failed to load - advanced Solana serialization will be disabled');
+				// Create minimal mock to prevent errors
+				window.borsh = {
+					serialize: function() { throw new Error('Borsh not available'); },
+					deserialize: function() { throw new Error('Borsh not available'); }
+				};
+			};
+			document.head.appendChild(borshScript);
 		}
+
+		// Load libraries after DOM is ready
+		document.addEventListener('DOMContentLoaded', loadExternalLibraries);
 	</script>
 	<link rel="stylesheet" href="{{AppSubURL}}/assets/font-awesome-4.6.3/css/font-awesome.min.css">
 	<link rel="stylesheet" href="{{AppSubURL}}/assets/octicons-4.3.0/octicons.min.css">
